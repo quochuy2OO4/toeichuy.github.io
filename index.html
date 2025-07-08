@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học từ vựng TOEIC Part 1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: Ứng dụng được cấu trúc theo dạng bảng điều khiển tương tác. Người dùng bắt đầu với tổng quan (biểu đồ) và danh sách đầy đủ. Họ có thể sử dụng các nút lọc theo chủ đề để thu hẹp danh sách từ vựng, tập trung vào một lĩnh vực cụ thể. Mỗi từ vựng được trình bày dưới dạng "thẻ lật" (flashcard) để khuyến khích việc học chủ động (cố gắng nhớ nghĩa trước khi xem). Cấu trúc này được chọn vì nó chuyển đổi một danh sách tĩnh thành một công cụ học tập năng động, giúp người dùng dễ dàng điều hướng, tập trung và tương tác với nội dung, phù hợp với mục tiêu ghi nhớ từ vựng. -->
+    <!-- Visualization & Content Choices: 
+        1. Phân loại từ vựng (Report Info) -> Mục tiêu: So sánh -> Trình bày: Biểu đồ cột (Bar Chart - Chart.js) -> Tương tác: Hiển thị tĩnh -> Lý do: Cung cấp một cái nhìn tổng quan trực quan về số lượng từ trong mỗi chủ đề, giúp người dùng định lượng được nội dung cần học.
+        2. Danh sách từ vựng (Report Info) -> Mục tiêu: Sắp xếp & Thông tin -> Trình bày: Lưới thẻ tương tác (HTML/CSS/Tailwind) -> Tương tác: Lọc theo chủ đề và "lật thẻ" để xem nghĩa (JS) -> Lý do: Biến việc học thành một hoạt động tương tác, cho phép người dùng tự kiểm tra kiến thức và tập trung vào các nhóm từ vựng cụ thể, hiệu quả hơn nhiều so với việc đọc một bảng tĩnh.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: #FDFBF6;
+            color: #3C3633;
+        }
+        .filter-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .filter-btn.active {
+            background-color: #EEA22B;
+            color: #ffffff;
+            font-weight: 700;
+        }
+        .vocab-card .vietnamese {
+            display: none;
+        }
+        .vocab-card.revealed .vietnamese {
+            display: block;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 2rem auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">LESSON 2 (TOEIC 250 - 550)</h1>
+            <p class="text-lg text-gray-600 mt-2">Động từ hay được sử dụng để miêu tả tranh trong Part 1</p>
+        </header>
+
+        <main>
+            <section id="introduction" class="text-center max-w-3xl mx-auto mb-12">
+                <p class="text-base text-gray-700">
+                    Chào mừng bạn đến với công cụ học từ vựng tương tác! Tại đây, bạn có thể khám phá các cụm từ quan trọng cho TOEIC Part 1. Hãy sử dụng biểu đồ bên dưới để xem phân bổ từ vựng theo chủ đề, sau đó dùng các nút lọc để tập trung học từng nhóm từ. Nhấn vào mỗi thẻ từ để xem nghĩa tiếng Việt và tự kiểm tra khả năng ghi nhớ của mình.
+                </p>
+            </section>
+
+            <section id="chart-section" class="mb-12">
+                 <div class="chart-container">
+                    <canvas id="vocabChart"></canvas>
+                </div>
+            </section>
+            
+            <section id="interactive-vocab">
+                <div id="filter-container" class="flex flex-wrap justify-center gap-2 mb-8">
+                </div>
+
+                <div id="vocab-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>Một ứng dụng học tập tương tác được thiết kế để nâng cao trải nghiệm học của bạn.</p>
+        </footer>
+    </div>
+
+    <script>
+        const vocabularyData = [
+            { stt: 1, topic: 'Documents/Materials', english: 'Distributing materials', vietnamese: 'Phát tài liệu' },
+            { stt: 2, topic: 'Documents/Materials', english: 'Examining a document', vietnamese: 'Kiểm tra tài liệu' },
+            { stt: 3, topic: 'Documents/Materials', english: 'Filing the paper', vietnamese: 'Sắp xếp giấy tờ' },
+            { stt: 4, topic: 'Documents/Materials', english: 'Looking through some papers', vietnamese: 'Xem qua một số giấy tờ' },
+            { stt: 5, topic: 'Documents/Materials', english: 'Putting the paper in the piles', vietnamese: 'Chất giấy tờ thành chồng' },
+            { stt: 6, topic: 'Documents/Materials', english: 'Reviewing some documents', vietnamese: 'Xem xét một số tài liệu' },
+            { stt: 7, topic: 'Documents/Materials', english: 'Stapling some documents together', vietnamese: 'Ghim một số tài liệu lại với nhau' },
+            { stt: 8, topic: 'Documents/Materials', english: 'Writing on a piece of paper', vietnamese: 'Viết trên một mảnh giấy' },
+            { stt: 9, topic: 'Computers', english: 'Entering some data into the computer', vietnamese: 'Nhập một số dữ liệu vào máy tính' },
+            { stt: 10, topic: 'Computers', english: 'Typing up a document', vietnamese: 'Đánh máy một văn bản' },
+            { stt: 11, topic: 'Computers', english: 'Using a laptop computer', vietnamese: 'Sử dụng máy tính xách tay' },
+            { stt: 12, topic: 'Computers', english: 'Working at the keyboard', vietnamese: 'Làm việc trên bàn phím' },
+            { stt: 13, topic: 'Office supplies/Equipment', english: 'Looking in a drawer', vietnamese: 'Nhìn vào một cái ngăn kéo' },
+            { stt: 14, topic: 'Office supplies/Equipment', english: 'Plugging a cord into a machine', vietnamese: 'Cắm dây vào một cái máy' },
+            { stt: 15, topic: 'Office supplies/Equipment', english: 'Being scattered around the room', vietnamese: 'Nằm rải rác trong phòng' },
+            { stt: 16, topic: 'Office supplies/Equipment', english: 'Exchanging business cards', vietnamese: 'Trao đổi danh thiếp' },
+            { stt: 17, topic: 'Office supplies/Equipment', english: 'Organizing the desk', vietnamese: 'Sắp xếp bàn làm việc' },
+            { stt: 18, topic: 'Office supplies/Equipment', english: 'Stretching back in his seat', vietnamese: 'Dựa lưng vào chỗ ngồi' },
+            { stt: 19, topic: 'Office supplies/Equipment', english: 'Putting paper in a copy machine', vietnamese: 'Bỏ giấy vào máy photo' },
+            { stt: 20, topic: 'Office supplies/Equipment', english: 'Using some office equipment', vietnamese: 'Sử dụng thiết bị văn phòng' },
+            { stt: 21, topic: 'Construction sites', english: 'Being under construction', vietnamese: 'Đang được thi công' },
+            { stt: 22, topic: 'Construction sites', english: 'Being stacked on top of one another', vietnamese: 'Chất chồng lên nhau' },
+            { stt: 23, topic: 'Construction sites', english: 'Building a brick wall', vietnamese: 'Xây một bức tường gạch' },
+            { stt: 24, topic: 'Construction sites', english: 'Climbing up a ladder', vietnamese: 'Leo lên một cái thang' },
+            { stt: 25, topic: 'Construction sites', english: 'Digging a hole', vietnamese: 'Đào một cái hố' },
+            { stt: 26, topic: 'Construction sites', english: 'Hammering pieces of wood', vietnamese: 'Nện búa vào các mảnh gỗ' },
+            { stt: 27, topic: 'Construction sites', english: 'Looking at the blueprint', vietnamese: 'Nhìn vào bản vẽ' },
+            { stt: 28, topic: 'Construction sites', english: 'Putting up a building', vietnamese: 'Xây một tòa nhà' },
+            { stt: 29, topic: 'Construction sites', english: 'Repairing a power cable', vietnamese: 'Sửa chữa cáp điện' },
+            { stt: 30, topic: 'Construction sites', english: 'Sawing boards', vietnamese: 'Cưa những tấm ván' },
+            { stt: 31, topic: 'Construction sites', english: 'Working underground', vietnamese: 'Làm việc dưới lòng đất' },
+            { stt: 32, topic: 'Construction sites', english: 'Unloading the shipment', vietnamese: 'Dỡ hàng' },
+            { stt: 33, topic: 'Factories', english: 'Measuring a cabinet', vietnamese: 'Đo một cái tủ' },
+            { stt: 34, topic: 'Factories', english: 'Wearing a safety vest', vietnamese: 'Mặc áo bảo hộ' },
+            { stt: 35, topic: 'Factories', english: 'Packing up the equipment', vietnamese: 'Đóng gói thiết bị' },
+            { stt: 36, topic: 'Factories', english: 'Working with a tool', vietnamese: 'Làm việc với một công cụ' },
+            { stt: 37, topic: 'Factories', english: 'Working in an assembly line', vietnamese: 'Làm việc trong một dây chuyền lắp ráp' },
+            { stt: 38, topic: 'Factories', english: 'Handling some packages', vietnamese: 'Xử lý một vài kiện hàng' },
+            { stt: 39, topic: 'Factories', english: 'Removing the lid', vietnamese: 'Tháo nắp' },
+            { stt: 40, topic: 'Actions', english: 'Labeling a sample', vietnamese: 'Ghi nhãn một mẫu' },
+            { stt: 41, topic: 'Actions', english: 'Pouring liquid into a glass', vietnamese: 'Rót chất lỏng vào ly' },
+            { stt: 42, topic: 'Actions', english: 'Setting up the equipment', vietnamese: 'Thiết lập thiết bị' },
+            { stt: 43, topic: 'Actions', english: 'Holding a test tube', vietnamese: 'Cầm một ống nghiệm lên' },
+            { stt: 44, topic: 'Actions', english: 'Adjusting a scientific instrument', vietnamese: 'Điều chỉnh một công cụ khoa học' },
+            { stt: 45, topic: 'Actions', english: 'Using laboratory equipment', vietnamese: 'Sử dụng thiết bị thí nghiệm' },
+            { stt: 46, topic: 'Actions', english: 'Looking into a microscope', vietnamese: 'Nhìn vào kính hiển vi' },
+            { stt: 47, topic: 'Clothing', english: 'Wearing a lab coat', vietnamese: 'Mặc áo khoác phòng thí nghiệm' },
+            { stt: 48, topic: 'Clothing', english: 'Wearing safety gloves', vietnamese: 'Đeo găng tay bảo hộ' },
+            { stt: 49, topic: 'Meetings', english: 'Having a meeting', vietnamese: 'Có một cuộc họp' },
+            { stt: 50, topic: 'Meetings', english: 'Sitting opposite each other', vietnamese: 'Ngồi đối diện nhau' },
+            { stt: 51, topic: 'Meetings', english: 'Sitting across from each other', vietnamese: 'Ngồi đối diện nhau' },
+            { stt: 52, topic: 'Meetings', english: 'Writing in a notebook', vietnamese: 'Viết vào vở' },
+            { stt: 53, topic: 'Meetings', english: 'Setting up a projector', vietnamese: 'Thiết lập máy chiếu' },
+            { stt: 54, topic: 'Presentations', english: 'Delivering/ making/ giving a presentation', vietnamese: 'Thuyết trình' },
+            { stt: 55, topic: 'Presentations', english: 'Attending a presentation', vietnamese: 'Tham dự một buổi thuyết trình' },
+            { stt: 56, topic: 'Presentations', english: 'Listening to a speaker', vietnamese: 'Nghe một người nói' },
+            { stt: 57, topic: 'Presentations', english: 'Facing a group of people', vietnamese: 'Đối mặt với một nhóm người' },
+            { stt: 58, topic: 'At an airport', english: 'Approaching an airport', vietnamese: 'Tiếp cận một sân bay' },
+            { stt: 59, topic: 'At an airport', english: 'Being loaded into', vietnamese: 'Được chất vào' },
+            { stt: 60, topic: 'At an airport', english: 'Being about to depart', vietnamese: 'Sắp khởi hành' },
+            { stt: 61, topic: 'At an airport', english: 'Carrying his luggage', vietnamese: 'Mang hành lý của anh ấy' },
+            { stt: 62, topic: 'At an airport', english: 'Checking the bags', vietnamese: 'Kiểm tra túi' },
+            { stt: 63, topic: 'At an airport', english: 'Inspecting some luggage', vietnamese: 'Kiểm tra một số hành lý' },
+            { stt: 64, topic: 'At an airport', english: 'Claiming one\'s luggage', vietnamese: 'Nhận hành lý' },
+            { stt: 65, topic: 'At an airport', english: 'Descending the staircase', vietnamese: 'Đi xuống cầu thang' },
+            { stt: 66, topic: 'At an airport', english: 'Having been shut down', vietnamese: 'Đã bị đóng cửa' },
+            { stt: 67, topic: 'At an airport', english: 'Having taken off', vietnamese: 'Đã cất cánh' },
+            { stt: 68, topic: 'At an airport', english: 'Landing at the airport', vietnamese: 'Hạ cánh xuống sân bay' },
+            { stt: 69, topic: 'At an airport', english: 'Being ready to leave the plane', vietnamese: 'Sẵn sàng rời máy bay' },
+            { stt: 70, topic: 'At an airport', english: 'Moving one\'s luggage', vietnamese: 'Di chuyển hành lý' },
+            { stt: 71, topic: 'At an airport', english: 'Taking one\'s bag from the airplane', vietnamese: 'Lấy một chiếc túi từ máy bay' },
+            { stt: 72, topic: 'At a hotel', english: 'Waiting at the terminal', vietnamese: 'Chờ đợi ở nhà ga' },
+            { stt: 73, topic: 'At a hotel', english: 'Waiting in a line', vietnamese: 'Xếp hàng chờ đợi' },
+            { stt: 74, topic: 'At a hotel', english: 'Checking into the hotel', vietnamese: 'Nhận phòng khách sạn' },
+            { stt: 75, topic: 'At a hotel', english: 'Checking out of the hotel', vietnamese: 'Trả phòng khách sạn' },
+            { stt: 76, topic: 'At a hotel', english: 'Making the bed', vietnamese: 'Dọn giường' },
+            { stt: 77, topic: 'At a hotel', english: 'Need to be cleaned up', vietnamese: 'Cần được dọn dẹp' },
+            { stt: 78, topic: 'At a hotel', english: 'Piling luggage on a cart', vietnamese: 'Chất đống hành lý trên xe đẩy' },
+            { stt: 79, topic: 'At a hotel', english: 'Pulling one luggage', vietnamese: 'Kéo một hành lý' },
+            { stt: 80, topic: 'At a hotel', english: 'Reserving a hotel room', vietnamese: 'Đặt phòng khách sạn' },
+            { stt: 81, topic: 'At a hotel', english: 'Smiling at a customer', vietnamese: 'Mỉm cười với khách hàng' },
+            { stt: 82, topic: 'At a hotel', english: 'Standing at the front desk', vietnamese: 'Đứng ở quầy lễ tân' },
+            { stt: 83, topic: 'At a hotel', english: 'Unpacking their suitcases', vietnamese: 'Dỡ hành lý trong vali' },
+            { stt: 84, topic: 'At a hotel', english: 'Waiting for the elevator', vietnamese: 'Chờ thang máy' },
+            { stt: 85, topic: 'At a hotel', english: 'Being on the top shelf', vietnamese: 'Ở kệ trên cùng' },
+            { stt: 86, topic: 'At a library/bookshop', english: 'Being stacked on the shelves', vietnamese: 'Được xếp chồng lên kệ' },
+            { stt: 87, topic: 'At a library/bookshop', english: 'Browse in a bookstore', vietnamese: 'Dạo quanh một hiệu sách' },
+            { stt: 88, topic: 'At a library/bookshop', english: 'Checking out books', vietnamese: 'Mượn sách' },
+            { stt: 89, topic: 'At a library/bookshop', english: 'Putting away books', vietnamese: 'Cất sách đi' },
+            { stt: 90, topic: 'At a library/bookshop', english: 'Reaching for a book', vietnamese: 'Với lấy một cuốn sách' },
+            { stt: 91, topic: 'At a library/bookshop', english: 'Reviewing a book', vietnamese: 'Đánh giá một cuốn sách' },
+            { stt: 92, topic: 'At a library/bookshop', english: 'Shelving the journals', vietnamese: 'Xếp tạp chí lên kệ' },
+            { stt: 93, topic: 'At a library/bookshop', english: 'Taking out one\'s book', vietnamese: 'Lấy sách ra' },
+            { stt: 94, topic: 'At a hospital', english: 'Examining an X-ray image', vietnamese: 'Kiểm tra hình ảnh X quang' },
+            { stt: 95, topic: 'At a hospital', english: 'Examining a patient', vietnamese: 'Khám bệnh' },
+            { stt: 96, topic: 'At a hospital', english: 'Filling out a medical form', vietnamese: 'Điền vào một biểu mẫu y tế' },
+            { stt: 97, topic: 'At a hospital', english: 'Getting an injection', vietnamese: 'Tiêm thuốc' },
+            { stt: 98, topic: 'At other places', english: 'Handing out medication', vietnamese: 'Phát thuốc' },
+            { stt: 99, topic: 'At other places', english: 'Having one\'s temperature taken', vietnamese: 'Đo nhiệt độ' },
+            { stt: 100, topic: 'At other places', english: 'Reading the patient\'s records', vietnamese: 'Đọc hồ sơ của bệnh nhân' },
+            { stt: 101, topic: 'At other places', english: 'Admiring a painting', vietnamese: 'Chiêm ngưỡng một bức tranh' },
+            { stt: 102, topic: 'At other places', english: 'Being alone in an art gallery', vietnamese: 'Một mình trong một phòng trưng bày nghệ thuật' },
+            { stt: 103, topic: 'At other places', english: 'Baking the pies', vietnamese: 'Nướng bánh' },
+            { stt: 104, topic: 'At other places', english: 'Being sliced', vietnamese: 'Bị cắt lát' },
+            { stt: 105, topic: 'At other places', english: 'Arranging loaves of bread', vietnamese: 'Sắp xếp những ổ bánh mì' },
+            { stt: 106, topic: 'At other places', english: 'Being closed to visitors', vietnamese: 'Đóng cửa với du khách' },
+            { stt: 107, topic: 'At other places', english: 'Being filled with customers', vietnamese: 'Đông nghẹt khách' },
+            { stt: 108, topic: 'At other places', english: 'Having been placed around the table', vietnamese: 'Đã được đặt xung quanh bàn' },
+            { stt: 109, topic: 'At other places', english: 'Having been set out', vietnamese: 'Đã được bố trí' },
+            { stt: 110, topic: 'At other places', english: 'Having one\'s fingernails painted', vietnamese: 'Sơn móng tay' },
+            { stt: 111, topic: 'At other places', english: 'Being tied up in a bundle', vietnamese: 'Được cột thành bó' },
+            { stt: 112, topic: 'At other places', english: 'Trimming the client\'s hair', vietnamese: 'Cắt tỉa tóc của khách hàng' },
+            { stt: 113, topic: 'At other places', english: 'Wiping the table', vietnamese: 'Lau bàn' },
+            { stt: 114, topic: 'Outside a building', english: 'Being all identical', vietnamese: 'Giống hệt nhau' },
+            { stt: 115, topic: 'Outside a building', english: 'Being built in a similar style', vietnamese: 'Được xây theo phong cách tương tự nhau' },
+            { stt: 116, topic: 'Outside a building', english: 'Being rebuilt', vietnamese: 'Được xây dựng lại' },
+            { stt: 117, topic: 'Outside a building', english: 'Polishing the handrail', vietnamese: 'Đánh bóng lan can' },
+            { stt: 118, topic: 'Outside a building', english: 'Standing on the roof of the building', vietnamese: 'Đứng trên mái nhà' },
+            { stt: 119, topic: 'Outside a building', english: 'Suspended from a window', vietnamese: 'Được treo từ một cửa sổ' },
+            { stt: 120, topic: 'Outside a building', english: 'Having been opened to provide shade', vietnamese: 'Đã được mở để cung cấp bóng râm' },
+            { stt: 121, topic: 'At an entrance', english: 'Being arranged on the patio', vietnamese: 'Được sắp xếp trên sân' },
+            { stt: 122, topic: 'At an entrance', english: 'Scrubbing the steps', vietnamese: 'Cọ rửa các bậc thang' },
+            { stt: 123, topic: 'In a garden', english: 'Sitting on the porch', vietnamese: 'Ngồi trên hiên nhà' },
+            { stt: 124, topic: 'In a garden', english: 'Standing on a walkway', vietnamese: 'Đứng ở lối đi' },
+            { stt: 125, topic: 'In a garden', english: 'Being picked in the garden', vietnamese: 'Được hái trong vườn' },
+            { stt: 126, topic: 'In a garden', english: 'Building a fence', vietnamese: 'Xây dựng hàng rào' },
+            { stt: 127, topic: 'In a garden', english: 'Mowing the lawn', vietnamese: 'Cắt cỏ' },
+            { stt: 128, topic: 'In a garden', english: 'Trimming the branches of the tree', vietnamese: 'Cắt tỉa cành cây' },
+            { stt: 129, topic: 'In a garden', english: 'Watering the plants', vietnamese: 'Tưới cây' },
+            { stt: 130, topic: 'In a garden', english: 'Hanging from a pole', vietnamese: 'Treo trên cột' },
+            { stt: 131, topic: 'In a garden', english: 'Browse plants', vietnamese: 'Dạo xem cây' },
+            { stt: 132, topic: 'In a garden', english: 'Sowing the seeds', vietnamese: 'Gieo hạt' },
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const filterContainer = document.getElementById('filter-container');
+            const vocabGrid = document.getElementById('vocab-grid');
+            const chartCtx = document.getElementById('vocabChart').getContext('2d');
+
+            const topics = ['Tất cả', ...new Set(vocabularyData.map(item => item.topic))];
+            let activeFilter = 'Tất cả';
+
+            function renderFilters() {
+                filterContainer.innerHTML = '';
+                topics.forEach(topic => {
+                    const button = document.createElement('button');
+                    button.textContent = topic.replace(/<br>/g, ' ');
+                    button.dataset.topic = topic;
+                    button.className = `filter-btn px-4 py-2 rounded-full border border-gray-300 text-gray-700 bg-white shadow-sm hover:bg-gray-100 ${topic === activeFilter ? 'active' : ''}`;
+                    button.addEventListener('click', () => {
+                        activeFilter = topic;
+                        renderFilters();
+                        renderVocab();
+                    });
+                    filterContainer.appendChild(button);
+                });
+            }
+
+            function renderVocab() {
+                vocabGrid.innerHTML = '';
+                const filteredData = activeFilter === 'Tất cả'
+                    ? vocabularyData
+                    : vocabularyData.filter(item => item.topic === activeFilter);
+
+                filteredData.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'vocab-card bg-white p-4 rounded-lg shadow-md cursor-pointer border-l-4 border-transparent hover:border-yellow-400 transition-all duration-200';
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start">
+                           <span class="text-xs font-bold uppercase text-yellow-600">${item.topic.replace(/<br>/g, ' ')}</span>
+                           <span class="text-sm font-bold text-gray-400">#${item.stt}</span>
+                        </div>
+                        <p class="english font-semibold text-lg mt-2 text-gray-800">${item.english}</p>
+                        <p class="vietnamese text-base mt-2 text-green-700 font-medium">${item.vietnamese}</p>
+                        <p class="text-xs text-gray-400 mt-3 italic">Nhấn để xem nghĩa</p>
+                    `;
+                    card.addEventListener('click', () => {
+                        card.classList.toggle('revealed');
+                        const helpText = card.querySelector('.italic');
+                        if (helpText) {
+                           helpText.style.display = 'none';
+                        }
+                    });
+                    vocabGrid.appendChild(card);
+                });
+            }
+
+            function renderChart() {
+                const topicCounts = vocabularyData.reduce((acc, item) => {
+                    acc[item.topic] = (acc[item.topic] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const chartLabels = Object.keys(topicCounts);
+                const chartData = Object.values(topicCounts);
+
+                new Chart(chartCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: chartLabels.map(l => l.replace(/<br>/g, ' ')),
+                        datasets: [{
+                            label: 'Số lượng từ vựng',
+                            data: chartData,
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.5)',
+                                'rgba(54, 162, 235, 0.5)',
+                                'rgba(255, 206, 86, 0.5)',
+                                'rgba(75, 192, 192, 0.5)',
+                                'rgba(153, 102, 255, 0.5)',
+                                'rgba(255, 159, 64, 0.5)',
+                                'rgba(199, 199, 199, 0.5)',
+                                'rgba(83, 102, 255, 0.5)',
+                                'rgba(40, 159, 64, 0.5)',
+                                'rgba(210, 99, 132, 0.5)',
+                                'rgba(60, 162, 235, 0.5)',
+                                'rgba(200, 206, 86, 0.5)',
+                            ],
+                            borderColor: [
+                               'rgba(255, 99, 132, 1)',
+                               'rgba(54, 162, 235, 1)',
+                               'rgba(255, 206, 86, 1)',
+                               'rgba(75, 192, 192, 1)',
+                               'rgba(153, 102, 255, 1)',
+                               'rgba(255, 159, 64, 1)',
+                               'rgba(199, 199, 199, 1)',
+                               'rgba(83, 102, 255, 1)',
+                               'rgba(40, 159, 64, 1)',
+                               'rgba(210, 99, 132, 1)',
+                               'rgba(60, 162, 235, 1)',
+                               'rgba(200, 206, 86, 1)',
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Phân Bổ Từ Vựng Theo Chủ Đề',
+                                font: {
+                                    size: 18,
+                                    weight: 'bold',
+                                },
+                                color: '#3C3633'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Số lượng từ'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    autoSkip: false,
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            renderChart();
+            renderFilters();
+            renderVocab();
+        });
+    </script>
+</body>
+</html>
